@@ -50,7 +50,17 @@ class TodoView extends View {
   // Insert the todo item into the DOM
   appendTodoItem(title) {
     const newTodoItem = document.createElement("li");
+
+    // Create the checkbox
+    const todoCheckButton = document.createElement("input");
+    todoCheckButton.type = "checkbox";
+    todoCheckButton.className = "todoCheck";
+    newTodoItem.appendChild(todoCheckButton)
+
+    // Create the label
     newTodoItem.appendChild(document.createTextNode(title));
+
+    // Add to the DOM
     document.getElementById("todoList").appendChild(newTodoItem);
   }
 }

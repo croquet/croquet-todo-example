@@ -1,0 +1,70 @@
+body {
+  margin-top: 50px;
+  font-family: "Open Sans", sans-serif;
+  display: flex;
+  justify-content: center;
+  font-size: 16px;
+}
+
+h1 {
+  font-size: 20px;
+  margin-top: 0;
+}
+
+.container {
+  width: 600px;
+  padding: 20px;
+}
+
+ul#todoList {
+  list-style-type: none;
+  padding-left: 25px;
+  padding-bottom: 0px;
+  border-bottom: 1px solid #efefef;
+  border-top: 1px solid #efefef;
+}
+
+ul#todoList li {
+  margin: 0;
+  padding: 6px 0;
+  border-top: 1px solid #efefef;
+  position: relative;
+}
+
+ul#todoList li:hover {
+  background-color: #f7f7ff;
+}
+
+ul#todoList li:first-child {
+  border-top: none;
+}
+
+/* TODO: Swap out the checkbox with a custom icon */
+.todoCheck {
+  position: absolute;
+  margin-left: -25px;
+  top: 5px;
+  left: 0;
+  width: 18px;
+  height: 18px;
+}
+
+#newTodoValue {
+  padding: 8px 10px;
+  font-size: 16px;
+  margin-left: 25px;
+  border: none;
+  background-color: #efefef;
+  border-radius: 5px;
+  width: 50%;
+}
+
+#addTodo {
+  float: right;
+  padding: 8px 15px;
+  font-size: 16px;
+  border-radius: 5px;
+  border: 1px solid #ef493e;
+  background-color: #ef493e;
+  color: #fff;
+}
