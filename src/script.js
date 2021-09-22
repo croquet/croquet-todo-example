@@ -16,6 +16,8 @@ class TodoList extends Model {
   }
 }
 
+// Could this line be simpler? 
+// Haven't I already registered the model in the `Session.join`?
 TodoList.register("TodoList");
 
 class TodoView extends View {
@@ -30,22 +32,22 @@ class TodoView extends View {
     const addTodoButton = document.getElementById("addTodo");
     addTodoButton.onclick = event => this.addTodoItem(event);
 
-    // Subscribe to receive new todos from the server
+    // Subscribe to receive all new todos from the server
     this.subscribe("todo", "added", this.handleTodoAdded);
   }
 
   addTodoItem(event) {
     // Get the title of the new todo that was just created
     const newTodoValue = document.getElementById("newTodoValue").value;
-    // Publish events to the server
+    // Publish events to the model, and by extension, other views
     this.publish("todo", "add", { title: newTodoValue });
   }
 
   handleTodoAdded(todo) {
-    // Add the new todo to the view
     this.appendTodoItem(todo.title);
   }
 
+  // Insert the todo item into the DOM
   appendTodoItem(title) {
     const newTodoItem = document.createElement("li");
     newTodoItem.appendChild(document.createTextNode(title));
