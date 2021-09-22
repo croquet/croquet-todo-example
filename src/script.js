@@ -7,12 +7,27 @@ class TodoList extends Model {
 
     // Subscribe to receive new todo items
     this.subscribe("todo", "add", this.todoAdded);
+    this.subscribe("todo", "checkClick", this.todoCheckClicked);
   }
 
   todoAdded(todo) {
-    this.todoItems.set(this.now(), todo.title);
+    // Add the new todo to the map
+    const todoId = this.now();
+    this.todoItems.set(`${todoId}`, { title: todo.title, checked: false });
+
     // Publish new todo items to the rest of the views
-    this.publish("todo", "added", { title: todo.title });
+    this.publish("todo", "added", { title: todo.title, id: todoId });
+  }
+
+  todoCheckClicked(todo) {
+    // Update the item to checked in the map
+    // TODO: Surely there is a cleaner way to do this! Spread operator?
+    const todoAttrs = this.todoItems.get(todo.id);
+    todoAttrs.checked = todo.checked;
+    this.todoItems.set(`${todo.id}`, todoAttrs);
+
+    // Publish checked todo item to the rest of the views
+    this.publish("todo", "checkClicked", { id: todo.id, checked: todo.checked });
   }
 }
 
@@ -23,39 +38,62 @@ TodoList.register("TodoList");
 class TodoView extends View {
   constructor(model) {
     super(model);
+    // Remove any existing todo items to prevent a double-draw!
+    document.getElementById("todoList").innerHTML = "";
+
     // Add existing todo items to the view
-    model.todoItems.forEach(element => {
-      this.appendTodoItem(element);
+    model.todoItems.forEach((value, key) => {
+      console.log(key, value);
+      this.appendTodoItem(value.title, key);
     });
 
-    // Register the click handler
+    // Register the click handlers
     const addTodoButton = document.getElementById("addTodo");
     addTodoButton.onclick = event => this.addTodoItem(event);
 
     // Subscribe to receive all new todos from the server
     this.subscribe("todo", "added", this.handleTodoAdded);
+    this.subscribe("todo", "checkClicked", this.handleCheckClicked);
   }
 
   addTodoItem(event) {
     // Get the title of the new todo that was just created
     const newTodoValue = document.getElementById("newTodoValue").value;
+
     // Publish events to the model, and by extension, other views
     this.publish("todo", "add", { title: newTodoValue });
   }
 
   handleTodoAdded(todo) {
-    this.appendTodoItem(todo.title);
+    this.appendTodoItem(todo.title, todo.id);
+  }
+
+  todoCheckClicked(event) {
+    const todoItem = event.target;
+    const todoId = todoItem.parentNode.id;
+    this.publish("todo", "checkClick", { id: todoId, checked: event.target.checked });
+    event.preventDefault();
+  }
+
+  handleCheckClicked(todo) {
+    const todoItem = document.getElementById(todo.id);
+    const checkbox = todoItem.getElementsByClassName("todoCheck")[0];
+    checkbox.checked = todo.checked;
   }
 
   // Insert the todo item into the DOM
-  appendTodoItem(title) {
+  appendTodoItem(title, todoId) {
     const newTodoItem = document.createElement("li");
+    newTodoItem.id = todoId;
 
     // Create the checkbox
     const todoCheckButton = document.createElement("input");
     todoCheckButton.type = "checkbox";
     todoCheckButton.className = "todoCheck";
-    newTodoItem.appendChild(todoCheckButton)
+    newTodoItem.appendChild(todoCheckButton);
+
+    // Publish an event when the checkbox is clicked
+    todoCheckButton.onclick = event => this.todoCheckClicked(event);
 
     // Create the label
     newTodoItem.appendChild(document.createTextNode(title));
@@ -70,7 +108,7 @@ Session.join({
   apiKey: "1_bdoj07sd3kzujn95jhplk2pz8xuio3pbmxx3k7q6",
   name: "todo-session",
   password: "secret",
-  debug: "sends,messages",
+  debug: "sends",
   model: TodoList,
   view: TodoView
 });
