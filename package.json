@@ -1,0 +1,26 @@
+{
+  "name": "croquet-todo-example",
+  "version": "0.0.1",
+  "description": "Realtime collaborative Todo app implemented using the Croquet platform.",
+  "main": "src/script.js",
+  "scripts": {
+    "start": "parcel src/*.html -p 9009",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jessmartin/croquet-todo-example.git"
+  },
+  "author": "Jess Martin",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jessmartin/croquet-todo-example/issues"
+  },
+  "homepage": "https://github.com/jessmartin/croquet-todo-example#readme",
+  "dependencies": {
+    "@croquet/croquet": "^1.0.4"
+  },
+  "devDependencies": {
+    "parcel-bundler": "^1.12.5"
+  }
+}
