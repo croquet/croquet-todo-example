@@ -54,11 +54,28 @@ class TodoView extends View {
     // Subscribe to receive all new todos from the server
     this.subscribe("todo", "added", this.handleTodoAdded);
     this.subscribe("todo", "checkClicked", this.handleCheckClicked);
+
+    document.onkeydown = this.logKey.bind(this);
+  }
+
+  logKey(event) {
+    const newTodoValue = document.getElementById("newTodoValue");
+
+    if (!newTodoValue.focus) {
+      return;
+    }
+
+    if (newTodoValue.value != "" && event.code === "Enter") {
+      console.log(this);
+      this.addTodoItem(event);
+    }
   }
 
   addTodoItem(event) {
+    const newTodo = document.getElementById("newTodoValue");
     // Get the title of the new todo that was just created
-    const newTodoValue = document.getElementById("newTodoValue").value;
+    const newTodoValue = newTodo.value;
+    newTodo.value = "";
 
     // Publish events to the model, and by extension, other views
     this.publish("todo", "add", { title: newTodoValue });
