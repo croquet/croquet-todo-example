@@ -5,7 +5,8 @@
   "main": "src/script.js",
   "scripts": {
     "start": "parcel src/*.html -p 9009",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "parcel build src/*.html"
   },
   "repository": {
     "type": "git",
