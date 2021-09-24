@@ -46,15 +46,12 @@ class TodoList extends Model {
 TodoList.register("TodoList");
 
 class TodoView extends View {
+  model = this.wellKnownModel("modelRoot");
+
   constructor(model) {
     super(model);
-    // Remove any existing todo items to prevent a double-draw!
-    document.getElementById("todoList").innerHTML = "";
 
-    // Add existing todo items to the view
-    model.todoItems.forEach((value, key) => {
-      this.appendTodoItem(value.title, key, value.checked);
-    });
+    this.drawTodos(model.todoItems);
 
     // Register the click handlers
     const addTodoButton = document.getElementById("addTodo");
@@ -72,6 +69,16 @@ class TodoView extends View {
     document.onkeydown = this.logKey.bind(this);
   }
 
+  drawTodos(todoItems) {
+    // Remove any existing todo items to prevent a double-draw!
+    document.getElementById("todoList").innerHTML = "";
+
+    // Add existing todo items to the view
+    todoItems.forEach((value, key) => {
+      this.appendTodoItem(value.title, key, value.checked);
+    });
+  }
+
   logKey(event) {
     const newTodoValue = document.getElementById("newTodoValue");
 
@@ -82,40 +89,45 @@ class TodoView extends View {
 
   addTodoItem(event) {
     const newTodo = document.getElementById("newTodoValue");
-    // Get the title of the new todo that was just created
     const newTodoValue = newTodo.value;
+    if (newTodoValue == "") { return; }
+
+    // Clear the input field
     newTodo.value = "";
+
+    // Optimistic update
+    this.appendTodoItem(newTodoValue, this.now(), false);
 
     // Publish events to the model, and by extension, other views
     this.publish("todo", "add", { title: newTodoValue });
   }
 
   handleTodoAdded(todo) {
-    this.appendTodoItem(todo.title, todo.id);
+    this.drawTodos(this.model.todoItems);
   }
 
   todoCheckClicked(event) {
     const todoItem = event.target;
     const todoId = todoItem.parentNode.id;
     this.publish("todo", "checkClick", { id: todoId, checked: event.target.checked });
-    event.preventDefault();
   }
 
   handleCheckClicked(todo) {
-    const todoItem = document.getElementById(todo.id);
-    const checkbox = todoItem.getElementsByClassName("todoCheck")[0];
-    checkbox.checked = todo.checked;
-    todoItem.className = todo.checked ? "checked" : "";
+    this.drawTodos(this.model.todoItems);
   }
 
   deleteTodoItem(event) {
-    const todoId = event.target.parentNode.id;
+    const todoItem = event.target.parentNode;
+    const todoId = todoItem.id;
+
+    // Optimistic update
+    todoItem.parentNode.removeChild(todoItem);
+
     this.publish("todo", "deleteClick", { id: todoId });
   }
 
   handleTodoDeleted(todo) {
-    const todoItem = document.getElementById(todo.id);
-    todoItem.parentNode.removeChild(todoItem);
+    this.drawTodos(this.model.todoItems);
   }
 
   // Insert the todo item into the DOM
