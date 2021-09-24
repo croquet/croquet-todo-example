@@ -53,6 +53,13 @@ ul#todoList li:first-child {
   height: 18px;
 }
 
+.deleteTodo {
+  position: absolute;
+  right: 0;
+  width: 20px;
+  height: 20px;
+}
+
 #newTodoValue {
   padding: 8px 10px;
   font-size: 16px;

@@ -110,6 +110,12 @@ class TodoView extends View {
     todoCheckButton.className = "todoCheck";
     newTodoItem.appendChild(todoCheckButton);
 
+    // Create the delete button
+    const deleteTodoButton = document.createElement("input");
+    deleteTodoButton.type = "button";
+    deleteTodoButton.className = "deleteTodo";
+    newTodoItem.appendChild(deleteTodoButton);
+
     // Publish an event when the checkbox is clicked
     todoCheckButton.onclick = event => this.todoCheckClicked(event);
 
