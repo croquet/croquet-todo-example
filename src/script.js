@@ -1,4 +1,5 @@
 // Croquet Todo Example
+// VanillaJS
 import { Model, View, Session } from "@croquet/croquet";
 
 class TodoList extends Model {
@@ -43,7 +44,6 @@ class TodoView extends View {
 
     // Add existing todo items to the view
     model.todoItems.forEach((value, key) => {
-      console.log(key, value);
       this.appendTodoItem(value.title, key);
     });
 
@@ -79,6 +79,7 @@ class TodoView extends View {
     const todoItem = document.getElementById(todo.id);
     const checkbox = todoItem.getElementsByClassName("todoCheck")[0];
     checkbox.checked = todo.checked;
+    todoItem.className = todo.checked ? "checked" : "";
   }
 
   // Insert the todo item into the DOM

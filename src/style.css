@@ -31,6 +31,10 @@ ul#todoList li {
   position: relative;
 }
 
+ul#todoList li.checked {
+  text-decoration: line-through;
+}
+
 ul#todoList li:hover {
   background-color: #f7f7ff;
 }
