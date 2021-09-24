@@ -9,6 +9,7 @@ class TodoList extends Model {
     // Subscribe to receive new todo items
     this.subscribe("todo", "add", this.todoAdded);
     this.subscribe("todo", "checkClick", this.todoCheckClicked);
+    this.subscribe("todo", "deleteClick", this.todoDeleteClicked);
   }
 
   todoAdded(todo) {
@@ -30,6 +31,14 @@ class TodoList extends Model {
     // Publish checked todo item to the rest of the views
     this.publish("todo", "checkClicked", { id: todo.id, checked: todo.checked });
   }
+
+  todoDeleteClicked(todo) {
+    // Remove the item from the map
+    this.todoItems.delete(todo.id);
+
+    // Publish deleted todo item to the rest of the views
+    this.publish("todo", "deleted", { id: todo.id });
+  }
 }
 
 // Could this line be simpler? 
@@ -44,16 +53,21 @@ class TodoView extends View {
 
     // Add existing todo items to the view
     model.todoItems.forEach((value, key) => {
-      this.appendTodoItem(value.title, key);
+      this.appendTodoItem(value.title, key, value.checked);
     });
 
     // Register the click handlers
     const addTodoButton = document.getElementById("addTodo");
     addTodoButton.onclick = event => this.addTodoItem(event);
+    const deleteButtons = document.getElementsByClassName("deleteTodo");
+    for (let i = 0; i < deleteButtons.length; i++) {
+      deleteButtons[i].onclick = event => this.deleteTodoItem(event);
+    }
 
     // Subscribe to receive all new todos from the server
     this.subscribe("todo", "added", this.handleTodoAdded);
     this.subscribe("todo", "checkClicked", this.handleCheckClicked);
+    this.subscribe("todo", "deleted", this.handleTodoDeleted);
 
     document.onkeydown = this.logKey.bind(this);
   }
@@ -61,12 +75,7 @@ class TodoView extends View {
   logKey(event) {
     const newTodoValue = document.getElementById("newTodoValue");
 
-    if (!newTodoValue.focus) {
-      return;
-    }
-
-    if (newTodoValue.value != "" && event.code === "Enter") {
-      console.log(this);
+    if (newTodoValue.focus && newTodoValue.value != "" && event.code === "Enter") {
       this.addTodoItem(event);
     }
   }
@@ -99,8 +108,18 @@ class TodoView extends View {
     todoItem.className = todo.checked ? "checked" : "";
   }
 
+  deleteTodoItem(event) {
+    const todoId = event.target.parentNode.id;
+    this.publish("todo", "deleteClick", { id: todoId });
+  }
+
+  handleTodoDeleted(todo) {
+    const todoItem = document.getElementById(todo.id);
+    todoItem.parentNode.removeChild(todoItem);
+  }
+
   // Insert the todo item into the DOM
-  appendTodoItem(title, todoId) {
+  appendTodoItem(title, todoId, checked) {
     const newTodoItem = document.createElement("li");
     newTodoItem.id = todoId;
 
@@ -110,17 +129,25 @@ class TodoView extends View {
     todoCheckButton.className = "todoCheck";
     newTodoItem.appendChild(todoCheckButton);
 
-    // Create the delete button
-    const deleteTodoButton = document.createElement("input");
-    deleteTodoButton.type = "button";
-    deleteTodoButton.className = "deleteTodo";
-    newTodoItem.appendChild(deleteTodoButton);
-
     // Publish an event when the checkbox is clicked
     todoCheckButton.onclick = event => this.todoCheckClicked(event);
 
+    // Create the delete button
+    const deleteTodoButton = document.createElement("span");
+    deleteTodoButton.className = "deleteTodo";
+    newTodoItem.appendChild(deleteTodoButton);
+
+    // Publish an event when delete is clicked
+    deleteTodoButton.onclick = event => this.deleteTodoItem(event);
+
     // Create the label
     newTodoItem.appendChild(document.createTextNode(title));
+
+    // Check the checkbox if the todo is checked
+    if (checked) {
+      todoCheckButton.checked = true;
+      newTodoItem.className = "checked";
+    }
 
     // Add to the DOM
     document.getElementById("todoList").appendChild(newTodoItem);

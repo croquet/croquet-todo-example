@@ -55,9 +55,20 @@ ul#todoList li:first-child {
 
 .deleteTodo {
   position: absolute;
+  display: inline-block;
   right: 0;
+  top: 5px;
   width: 20px;
   height: 20px;
+}
+
+.deleteTodo:after {
+  content: "\1F5D1";
+  font-size: 15px;
+  color: #efefef;
+  line-height: 18px;
+  text-align: center;
+  font-weight: 100;
 }
 
 #newTodoValue {
