@@ -7,21 +7,22 @@ class TodoList extends Model {
     this.todoItems = new Map();
 
     // Subscribe to receive new todo items
-    this.subscribe("todo", "add", this.todoAdded);
-    this.subscribe("todo", "checkClick", this.todoCheckClicked);
-    this.subscribe("todo", "deleteClick", this.todoDeleteClicked);
+    this.subscribe("todo", "add", this.addTodo);
+    this.subscribe("todo", "toggleCompletion", this.toggleCompletionTodo);
+    this.subscribe("todo", "delete", this.deleteTodo);
+    this.subscribe("todo", "edit", this.editTodo);
   }
 
-  todoAdded(todo) {
+  addTodo(todo) {
     // Add the new todo to the map
     const todoId = this.now();
     this.todoItems.set(`${todoId}`, { title: todo.title, checked: false });
 
     // Publish new todo items to the rest of the views
-    this.publish("todo", "added", { title: todo.title, id: todoId });
+    this.publish("todo", "added");
   }
 
-  todoCheckClicked(todo) {
+  toggleCompletionTodo(todo) {
     // Update the item to checked in the map
     // TODO: Surely there is a cleaner way to do this! Spread operator?
     const todoAttrs = this.todoItems.get(todo.id);
@@ -29,93 +30,142 @@ class TodoList extends Model {
     this.todoItems.set(`${todo.id}`, todoAttrs);
 
     // Publish checked todo item to the rest of the views
-    this.publish("todo", "checkClicked", { id: todo.id, checked: todo.checked });
+    this.publish("todo", "toggledCompletion");
   }
 
-  todoDeleteClicked(todo) {
+  editTodo(todo) {
+    const todoAttrs = this.todoItems.get(todo.id);
+    todoAttrs.title = todo.title;
+    this.todoItems.set(`${todo.id}`, todoAttrs);
+
+    // Publish edited todo item to the rest of the views
+    this.publish("todo", "edited");
+  }
+
+  deleteTodo(todo) {
     // Remove the item from the map
     this.todoItems.delete(todo.id);
 
     // Publish deleted todo item to the rest of the views
-    this.publish("todo", "deleted", { id: todo.id });
+    this.publish("todo", "deleted");
   }
 }
 
-// Could this line be simpler? 
-// Haven't I already registered the model in the `Session.join`?
 TodoList.register("TodoList");
 
 class TodoView extends View {
+  model = this.wellKnownModel("modelRoot");
+
   constructor(model) {
     super(model);
-    // Remove any existing todo items to prevent a double-draw!
-    document.getElementById("todoList").innerHTML = "";
 
-    // Add existing todo items to the view
-    model.todoItems.forEach((value, key) => {
-      this.appendTodoItem(value.title, key, value.checked);
-    });
+    this.redraw();
 
-    // Register the click handlers
+    // Register click handlers for add todo button
     const addTodoButton = document.getElementById("addTodo");
-    addTodoButton.onclick = event => this.addTodoItem(event);
-    const deleteButtons = document.getElementsByClassName("deleteTodo");
-    for (let i = 0; i < deleteButtons.length; i++) {
-      deleteButtons[i].onclick = event => this.deleteTodoItem(event);
-    }
+    addTodoButton.onclick = event => this.addTodo(event);
 
     // Subscribe to receive all new todos from the server
-    this.subscribe("todo", "added", this.handleTodoAdded);
-    this.subscribe("todo", "checkClicked", this.handleCheckClicked);
-    this.subscribe("todo", "deleted", this.handleTodoDeleted);
+    this.subscribe("todo", "added", this.redraw);
+    this.subscribe("todo", "toggledCompletion", this.redraw);
+    this.subscribe("todo", "deleted", this.redraw);
+    this.subscribe("todo", "edited", this.redraw);
 
+    // When the enter key is pressed, add the todo
     document.onkeydown = this.logKey.bind(this);
+  }
+
+  redraw() {
+    this.drawTodos(this.model.todoItems);
+  }
+
+  drawTodos(todoItems) {
+    // Clear existing todos
+    document.getElementById("todoList").innerHTML = "";
+
+    // Add each todo item to the view
+    todoItems.forEach((value, key) => {
+      this.appendTodoItem(value.title, key, value.checked);
+    });
   }
 
   logKey(event) {
     const newTodoValue = document.getElementById("newTodoValue");
 
     if (newTodoValue.focus && newTodoValue.value != "" && event.code === "Enter") {
-      this.addTodoItem(event);
+      this.addTodo(event);
+    }
+
+    if (event.target.className == "todoEdit" && event.code === "Enter") {
+      this.editTodo(event);
     }
   }
 
-  addTodoItem(event) {
+  addTodo(event) {
     const newTodo = document.getElementById("newTodoValue");
-    // Get the title of the new todo that was just created
     const newTodoValue = newTodo.value;
+    if (newTodoValue == "") { return; }
+
+    // Clear the input field
     newTodo.value = "";
+
+    // Optimistic update
+    this.appendTodoItem(newTodoValue, this.now(), false);
 
     // Publish events to the model, and by extension, other views
     this.publish("todo", "add", { title: newTodoValue });
   }
 
-  handleTodoAdded(todo) {
-    this.appendTodoItem(todo.title, todo.id);
-  }
-
-  todoCheckClicked(event) {
+  toggleCompletionTodo(event) {
     const todoItem = event.target;
     const todoId = todoItem.parentNode.id;
-    this.publish("todo", "checkClick", { id: todoId, checked: event.target.checked });
-    event.preventDefault();
+    this.publish("todo", "toggleCompletion", { id: todoId, checked: event.target.checked });
   }
 
-  handleCheckClicked(todo) {
-    const todoItem = document.getElementById(todo.id);
-    const checkbox = todoItem.getElementsByClassName("todoCheck")[0];
-    checkbox.checked = todo.checked;
-    todoItem.className = todo.checked ? "checked" : "";
+  editTodo(event) {
+    const todoItem = event.target.parentNode;
+    const todoId = todoItem.id;
+    const updatedTodoValue = event.target.value;
+
+    // Optimistic update
+    todoItem.querySelector(".todoText").innerHTML = updatedTodoValue;
+    this.disableEditTodo(event);
+
+    this.publish("todo", "edit", { id: todoId, title: updatedTodoValue });
   }
 
-  deleteTodoItem(event) {
-    const todoId = event.target.parentNode.id;
-    this.publish("todo", "deleteClick", { id: todoId });
-  }
+  deleteTodo(event) {
+    const todoItem = event.target.parentNode;
+    const todoId = todoItem.id;
 
-  handleTodoDeleted(todo) {
-    const todoItem = document.getElementById(todo.id);
+    // Optimistic update
     todoItem.parentNode.removeChild(todoItem);
+
+    this.publish("todo", "delete", { id: todoId });
+  }
+
+  enableEditTodo(event) {
+    const todoItem = event.target.parentNode;
+    const todoEdit = todoItem.querySelector(".todoEdit");
+
+    // Hide the text
+    const todoText = todoItem.querySelector(".todoText")
+    todoText.hidden = true;
+
+    // Show the input field
+    todoEdit.hidden = false;
+    todoEdit.setAttribute("contenteditable", "true");
+    todoEdit.focus();
+    todoEdit.addEventListener("blur", this.disableEditTodo);
+  }
+
+  disableEditTodo(event) {
+    const todoItem = event.target.parentNode;
+    const todoEdit = todoItem.querySelector(".todoEdit");
+    todoEdit.hidden = true;
+
+    const todoText = todoItem.querySelector(".todoText")
+    todoText.hidden = false;
   }
 
   // Insert the todo item into the DOM
@@ -130,7 +180,13 @@ class TodoView extends View {
     newTodoItem.appendChild(todoCheckButton);
 
     // Publish an event when the checkbox is clicked
-    todoCheckButton.onclick = event => this.todoCheckClicked(event);
+    todoCheckButton.onclick = event => this.toggleCompletionTodo(event);
+
+    // Create the edit button
+    const editTodoButton = document.createElement("span");
+    editTodoButton.className = "editTodo";
+    editTodoButton.onclick = event => this.enableEditTodo(event);
+    newTodoItem.appendChild(editTodoButton);
 
     // Create the delete button
     const deleteTodoButton = document.createElement("span");
@@ -138,10 +194,22 @@ class TodoView extends View {
     newTodoItem.appendChild(deleteTodoButton);
 
     // Publish an event when delete is clicked
-    deleteTodoButton.onclick = event => this.deleteTodoItem(event);
+    deleteTodoButton.onclick = event => this.deleteTodo(event);
 
-    // Create the label
-    newTodoItem.appendChild(document.createTextNode(title));
+    // Create the edit input field
+    const editTodoValue = document.createElement("input");
+    editTodoValue.className = "todoEdit";
+    editTodoValue.setAttribute("contenteditable", "false");
+    editTodoValue.hidden = true;
+    editTodoValue.value = title;
+    newTodoItem.appendChild(editTodoValue);
+
+    // Create the title
+    const todoTitle = document.createElement("span");
+    todoTitle.className = "todoText"
+    todoTitle.innerHTML = title;
+    todoTitle.ondblclick = event => this.enableEditTodo(event);
+    newTodoItem.appendChild(todoTitle);
 
     // Check the checkbox if the todo is checked
     if (checked) {
