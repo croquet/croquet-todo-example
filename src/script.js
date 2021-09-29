@@ -8,6 +8,8 @@ import * as Croquet from "@croquet/croquet";
 
 class TodoList extends Croquet.Model {
   init() {
+    // auto-incrementing ids
+    this.todoIds = 0;
     this.todoItems = new Map();
 
     // Subscribe to receive new todo items
@@ -17,10 +19,10 @@ class TodoList extends Croquet.Model {
     this.subscribe("todo", "edit", this.editTodo);
   }
 
-  addTodo(todo) {
+  addTodo(title) {
     // Add the new todo to the map
-    const todoId = this.now();
-    this.todoItems.set(`${todoId}`, { title: todo.title, checked: false });
+    const todoId = ++this.todoIds;
+    this.todoItems.set(todoId, { title, checked: false });
 
     // Publish new todo items to the rest of the views
     this.publish("todo", "added");
@@ -94,9 +96,9 @@ class TodoView extends Croquet.View {
   }
 
   logKey(event) {
-    const newTodoValue = document.getElementById("newTodoValue");
+    const newTodo = document.getElementById("newTodo");
 
-    if (newTodoValue.focus && newTodoValue.value != "" && event.code === "Enter") {
+    if (newTodo.focus && newTodo.value != "" && event.code === "Enter") {
       this.addTodo(event);
     }
 
@@ -105,19 +107,18 @@ class TodoView extends Croquet.View {
     }
   }
 
-  addTodo(event) {
-    const newTodo = document.getElementById("newTodoValue");
-    const newTodoValue = newTodo.value;
-    if (newTodoValue == "") { return; }
+  addTodo() {
+    const title = document.getElementById("newTodo").value;
+    if (title == "") { return; }
 
     // Clear the input field
     newTodo.value = "";
 
     // Optimistic update
-    this.appendTodoItem(newTodoValue, this.now(), false);
+    this.appendTodoItem(title, this.model.todoIds + 1, false);
 
-    // Publish events to the model, and by extension, other views
-    this.publish("todo", "add", { title: newTodoValue });
+    // Publish event to the model, and by extension, all views, including ours
+    this.publish("todo", "add", title);
   }
 
   toggleCompletionTodo(event) {
