@@ -32,6 +32,7 @@ class TodoList extends Croquet.Model {
     // Update the item to checked in the map
     // TODO: Surely there is a cleaner way to do this! Spread operator?
     const todoAttrs = this.todoItems.get(todoId);
+    if (!todoAttrs) { return; } // might have been deleted
     todoAttrs.checked = checked;
     this.todoItems.set(todoId, todoAttrs);
 
@@ -41,6 +42,7 @@ class TodoList extends Croquet.Model {
 
   editTodo({todoId, title}) {
     const todoAttrs = this.todoItems.get(todoId);
+    if (!todoAttrs) { return; } // might have been deleted
     todoAttrs.title = title;
     this.todoItems.set(todoId, todoAttrs);
 
