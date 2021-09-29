@@ -229,9 +229,8 @@ class TodoView extends Croquet.View {
 Croquet.Session.join({
   appId: "in.jessmart.croquet.todo.example",
   apiKey: "1_bdoj07sd3kzujn95jhplk2pz8xuio3pbmxx3k7q6",
-  name: "todo-session",
-  password: "secret",
-  debug: "sends",
+  name: Croquet.App.autoSession(),
+  password: Croquet.App.autoPassword(),
   model: TodoList,
   view: TodoView
 });
