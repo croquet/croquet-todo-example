@@ -31,18 +31,18 @@ class TodoList extends Croquet.Model {
   toggleCompletionTodo({todoId, checked}) {
     // Update the item to checked in the map
     // TODO: Surely there is a cleaner way to do this! Spread operator?
-    const todoAttrs = this.todoItems.get(todoId);
-    if (!todoAttrs) { return; } // might have been deleted
-    todoAttrs.checked = checked;
+    const todoItem = this.todoItems.get(todoId);
+    if (!todoItem) { return; } // might have been deleted
+    todoItem.checked = checked;
 
     // Publish checked todo item to the rest of the views
     this.publish("todo", "toggledCompletion");
   }
 
   editTodo({todoId, title}) {
-    const todoAttrs = this.todoItems.get(todoId);
-    if (!todoAttrs) { return; } // might have been deleted
-    todoAttrs.title = title;
+    const todoItem = this.todoItems.get(todoId);
+    if (!todoItem) { return; } // might have been deleted
+    todoItem.title = title;
 
     // Refresh all views
     this.publish("todo", "edited");
