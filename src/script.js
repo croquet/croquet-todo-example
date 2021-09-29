@@ -1,8 +1,12 @@
 // Croquet Todo Example
 // VanillaJS
-import { Model, View, Session } from "@croquet/croquet";
 
-class TodoList extends Model {
+// using prefixed names makes the code identical between
+// importing Croquet as modulke or via <script> tag
+// and matches our other docs
+import * as Croquet from "@croquet/croquet";
+
+class TodoList extends Croquet.Model {
   init() {
     this.todoItems = new Map();
 
@@ -53,7 +57,7 @@ class TodoList extends Model {
 
 TodoList.register("TodoList");
 
-class TodoView extends View {
+class TodoView extends Croquet.View {
   model = this.wellKnownModel("modelRoot");
 
   constructor(model) {
@@ -222,7 +226,7 @@ class TodoView extends View {
   }
 }
 
-Session.join({
+Croquet.Session.join({
   appId: "in.jessmart.croquet.todo.example",
   apiKey: "1_bdoj07sd3kzujn95jhplk2pz8xuio3pbmxx3k7q6",
   name: "todo-session",
