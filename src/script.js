@@ -34,7 +34,6 @@ class TodoList extends Croquet.Model {
     const todoAttrs = this.todoItems.get(todoId);
     if (!todoAttrs) { return; } // might have been deleted
     todoAttrs.checked = checked;
-    this.todoItems.set(todoId, todoAttrs);
 
     // Publish checked todo item to the rest of the views
     this.publish("todo", "toggledCompletion");
@@ -44,7 +43,6 @@ class TodoList extends Croquet.Model {
     const todoAttrs = this.todoItems.get(todoId);
     if (!todoAttrs) { return; } // might have been deleted
     todoAttrs.title = title;
-    this.todoItems.set(todoId, todoAttrs);
 
     // Refresh all views
     this.publish("todo", "edited");
