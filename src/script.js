@@ -22,21 +22,21 @@ class TodoList extends Croquet.Model {
   addTodo(title) {
     // Add the new todo to the map
     const todoId = ++this.todoIds;
-    this.todoItems.set(todoId, { todoId, title, checked: false });
+    const todoItem = { todoId, title, checked: false };
+    this.todoItems.set(todoId, todoItem);
 
-    // Publish new todo items to the rest of the views
-    this.publish("todo", "added");
+    // Refresh all views
+    this.publish("todo", "changed");
   }
 
   toggleCompletionTodo({todoId, checked}) {
-    // Update the item to checked in the map
-    // TODO: Surely there is a cleaner way to do this! Spread operator?
+    // Update checked status of item in the map
     const todoItem = this.todoItems.get(todoId);
     if (!todoItem) { return; } // might have been deleted
     todoItem.checked = checked;
 
-    // Publish checked todo item to the rest of the views
-    this.publish("todo", "toggledCompletion");
+    // Refresh all views
+    this.publish("todo", "changed");
   }
 
   editTodo({todoId, title}) {
@@ -45,7 +45,7 @@ class TodoList extends Croquet.Model {
     todoItem.title = title;
 
     // Refresh all views
-    this.publish("todo", "edited");
+    this.publish("todo", "changed");
   }
 
   deleteTodo({todoId}) {
@@ -54,7 +54,7 @@ class TodoList extends Croquet.Model {
     // okay if already deleted
 
     // Refresh all views
-    this.publish("todo", "deleted");
+    this.publish("todo", "changed");
   }
 }
 
@@ -72,31 +72,27 @@ class TodoView extends Croquet.View {
     const addTodoButton = document.getElementById("addTodo");
     addTodoButton.onclick = event => this.addTodo(event);
 
-    // Subscribe to receive all new todos from the server
-    this.subscribe("todo", "added", this.redraw);
-    this.subscribe("todo", "toggledCompletion", this.redraw);
-    this.subscribe("todo", "deleted", this.redraw);
-    this.subscribe("todo", "edited", this.redraw);
+    // Redraw list if todos changed
+    this.subscribe("todo", "changed", this.redraw);
 
     // When the enter key is pressed, add or edit the todo
     document.onkeydown = event => this.dispatchEnter(event);
   }
 
-  redraw(extraItem = null) {
-    const todos = [...this.model.todoItems.values()];
-    if (extraItem) todos.push(extraItem);
-    this.drawTodos(todos);
-  }
+  redraw(locallyAddedItem = null) {
+    const todoArray = [...this.model.todoItems.values()];
 
-  drawTodos(todoItems) {
-    // Clear existing todos
-    document.getElementById("todoList").innerHTML = "";
+    // for optimistic local update
+    if (locallyAddedItem) todo.push(locallyAddedItem);
 
     // sort by completion status and id
-    const sorted = todoItems.sort((a, b) => {
+    const sorted = todoArray.sort((a, b) => {
       if (a.checked !== b.checked) return a.checked - b.checked;
       return a.todoId - b.todoId;
     })
+
+    // Clear existing todos
+    document.getElementById("todoList").innerHTML = "";
 
     // Add each todo item to the view
     for (const {todoId, title, checked} of sorted) {
@@ -133,7 +129,8 @@ class TodoView extends Croquet.View {
   todoCheckButtonClicked(event) {
     const todoCheckButton = event.target;
     const todoId = +todoCheckButton.parentNode.id;
-    this.publish("todo", "toggleCompletion", { todoId, checked: event.target.checked });
+    const checked = todoCheckButton.checked;
+    this.publish("todo", "toggleCompletion", { todoId, checked });
   }
 
   editTodo(event) {
