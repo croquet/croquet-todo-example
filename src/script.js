@@ -165,7 +165,6 @@ class TodoView extends Croquet.View {
 
     // Show the input field
     todoEdit.hidden = false;
-    todoEdit.setAttribute("contenteditable", "true");
     todoEdit.focus();
     todoEdit.onblur = event => this.disableEditTodo(event);
   }
@@ -210,7 +209,6 @@ class TodoView extends Croquet.View {
     // Create the edit input field
     const editTodoValue = document.createElement("input");
     editTodoValue.className = "todoEdit";
-    editTodoValue.setAttribute("contenteditable", "false");
     editTodoValue.hidden = true;
     editTodoValue.value = title;
     todoElement.appendChild(editTodoValue);
