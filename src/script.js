@@ -28,31 +28,32 @@ class TodoList extends Croquet.Model {
     this.publish("todo", "added");
   }
 
-  toggleCompletionTodo(todo) {
+  toggleCompletionTodo({todoId, checked}) {
     // Update the item to checked in the map
     // TODO: Surely there is a cleaner way to do this! Spread operator?
-    const todoAttrs = this.todoItems.get(todo.id);
-    todoAttrs.checked = todo.checked;
-    this.todoItems.set(`${todo.id}`, todoAttrs);
+    const todoAttrs = this.todoItems.get(todoId);
+    todoAttrs.checked = checked;
+    this.todoItems.set(todoId, todoAttrs);
 
     // Publish checked todo item to the rest of the views
     this.publish("todo", "toggledCompletion");
   }
 
-  editTodo(todo) {
-    const todoAttrs = this.todoItems.get(todo.id);
-    todoAttrs.title = todo.title;
-    this.todoItems.set(`${todo.id}`, todoAttrs);
+  editTodo({todoId, title}) {
+    const todoAttrs = this.todoItems.get(todoId);
+    todoAttrs.title = title;
+    this.todoItems.set(todoId, todoAttrs);
 
-    // Publish edited todo item to the rest of the views
+    // Refresh all views
     this.publish("todo", "edited");
   }
 
-  deleteTodo(todo) {
+  deleteTodo({todoId}) {
     // Remove the item from the map
-    this.todoItems.delete(todo.id);
+    this.todoItems.delete(todoId);
+    // okay if already deleted
 
-    // Publish deleted todo item to the rest of the views
+    // Refresh all views
     this.publish("todo", "deleted");
   }
 }
@@ -122,21 +123,21 @@ class TodoView extends Croquet.View {
   }
 
   todoCheckButtonClicked(event) {
-    this.publish("todo", "toggleCompletion", { id: todoId, checked: event.target.checked });
     const todoCheckButton = event.target;
     const todoId = +todoCheckButton.parentNode.id;
+    this.publish("todo", "toggleCompletion", { todoId, checked: event.target.checked });
   }
 
   editTodo(event) {
     const todoItem = event.target.parentNode;
     const todoId = +todoItem.id;
-    const updatedTodoValue = event.target.value;
+    const title = event.target.value;
 
     // Optimistic update
-    todoItem.querySelector(".todoText").innerHTML = updatedTodoValue;
+    todoItem.querySelector(".todoText").innerHTML = title;
     this.disableEditTodo(event);
 
-    this.publish("todo", "edit", { id: todoId, title: updatedTodoValue });
+    this.publish("todo", "edit", { todoId, title });
   }
 
   deleteTodo(event) {
@@ -146,7 +147,7 @@ class TodoView extends Croquet.View {
     // Optimistic update
     todoItem.parentNode.removeChild(todoItem);
 
-    this.publish("todo", "delete", { id: todoId });
+    this.publish("todo", "delete", { todoId });
   }
 
   enableEditTodo(event) {
