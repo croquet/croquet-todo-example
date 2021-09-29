@@ -180,51 +180,26 @@ class TodoView extends Croquet.View {
 
   // Insert the todo item into the DOM
   appendTodoItem(title, todoId, checked) {
+    // create element itself
     const todoElement = document.createElement("li");
     todoElement.id = todoId;
+    if (checked) todoElement.className = "checked";
 
-    // Create the checkbox
-    const todoCheckButton = document.createElement("input");
-    todoCheckButton.type = "checkbox";
-    todoCheckButton.className = "todoCheck";
-    todoElement.appendChild(todoCheckButton);
+    // create inner elements
+    todoElement.innerHTML = `
+      <input type="checkbox" class="todoCheck" ${checked ? 'checked' : ''}>
+      <span class="editTodo"></span>
+      <span class="deleteTodo"></span>
+      <span class="todoText">${title}</span>
+      <input class="todoEdit" hidden="true">
+    `;
+    todoElement.querySelector(".todoEdit").value = title;
 
-    // Publish an event when the checkbox is clicked
-    todoCheckButton.onclick = event => this.todoCheckButtonClicked(event);
-
-    // Create the edit button
-    const editTodoButton = document.createElement("span");
-    editTodoButton.className = "editTodo";
-    editTodoButton.onclick = event => this.enableEditTodo(event);
-    todoElement.appendChild(editTodoButton);
-
-    // Create the delete button
-    const deleteTodoButton = document.createElement("span");
-    deleteTodoButton.className = "deleteTodo";
-    todoElement.appendChild(deleteTodoButton);
-
-    // Publish an event when delete is clicked
-    deleteTodoButton.onclick = event => this.deleteTodo(event);
-
-    // Create the edit input field
-    const editTodoValue = document.createElement("input");
-    editTodoValue.className = "todoEdit";
-    editTodoValue.hidden = true;
-    editTodoValue.value = title;
-    todoElement.appendChild(editTodoValue);
-
-    // Create the title
-    const todoTitle = document.createElement("span");
-    todoTitle.className = "todoText"
-    todoTitle.innerHTML = title;
-    todoTitle.ondblclick = event => this.enableEditTodo(event);
-    todoElement.appendChild(todoTitle);
-
-    // Check the checkbox if the todo is checked
-    if (checked) {
-      todoCheckButton.checked = true;
-      todoElement.className = "checked";
-    }
+    // register event handlers
+    todoElement.querySelector(".todoCheck").onclick = event => this.todoCheckButtonClicked(event);
+    todoElement.querySelector(".editTodo").onclick = event => this.enableEditTodo(event);
+    todoElement.querySelector(".deleteTodo").onclick = event => this.deleteTodo(event);
+    todoElement.querySelector(".todoText").ondblclick = event => this.enableEditTodo(event);
 
     // Add to the DOM
     document.getElementById("todoList").appendChild(todoElement);
