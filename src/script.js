@@ -77,8 +77,8 @@ class TodoView extends Croquet.View {
     this.subscribe("todo", "deleted", this.redraw);
     this.subscribe("todo", "edited", this.redraw);
 
-    // When the enter key is pressed, add the todo
-    document.onkeydown = this.logKey.bind(this);
+    // When the enter key is pressed, add or edit the todo
+    document.onkeydown = event => this.dispatchEnter(event);
   }
 
   redraw() {
@@ -95,7 +95,7 @@ class TodoView extends Croquet.View {
     });
   }
 
-  logKey(event) {
+  dispatchEnter(event) {
     const newTodo = document.getElementById("newTodo");
 
     if (newTodo.focus && newTodo.value != "" && event.code === "Enter") {
