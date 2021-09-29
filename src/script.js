@@ -167,7 +167,7 @@ class TodoView extends Croquet.View {
     todoEdit.hidden = false;
     todoEdit.setAttribute("contenteditable", "true");
     todoEdit.focus();
-    todoEdit.addEventListener("blur", this.disableEditTodo);
+    todoEdit.onblur = event => this.disableEditTodo(event);
   }
 
   disableEditTodo(event) {
