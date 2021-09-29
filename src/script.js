@@ -83,7 +83,7 @@ class TodoView extends Croquet.View {
     const todoArray = [...this.model.todoItems.values()];
 
     // for optimistic local update
-    if (locallyAddedItem) todo.push(locallyAddedItem);
+    if (locallyAddedItem) todoArray.push(locallyAddedItem);
 
     // sort by completion status and id
     const sorted = todoArray.sort((a, b) => {
