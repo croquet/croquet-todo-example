@@ -124,12 +124,12 @@ class TodoView extends Croquet.View {
   todoCheckButtonClicked(event) {
     this.publish("todo", "toggleCompletion", { id: todoId, checked: event.target.checked });
     const todoCheckButton = event.target;
-    const todoId = todoCheckButton.parentNode.id;
+    const todoId = +todoCheckButton.parentNode.id;
   }
 
   editTodo(event) {
     const todoItem = event.target.parentNode;
-    const todoId = todoItem.id;
+    const todoId = +todoItem.id;
     const updatedTodoValue = event.target.value;
 
     // Optimistic update
@@ -141,7 +141,7 @@ class TodoView extends Croquet.View {
 
   deleteTodo(event) {
     const todoItem = event.target.parentNode;
-    const todoId = todoItem.id;
+    const todoId = +todoItem.id;
 
     // Optimistic update
     todoItem.parentNode.removeChild(todoItem);
