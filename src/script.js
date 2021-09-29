@@ -82,17 +82,23 @@ class TodoView extends Croquet.View {
     document.onkeydown = event => this.dispatchEnter(event);
   }
 
-  redraw() {
-    this.drawTodos(this.model.todoItems);
+  redraw(extraItems = []) {
+    this.drawTodos([...this.model.todoItems, ...extraItems]);
   }
 
   drawTodos(todoItems) {
     // Clear existing todos
     document.getElementById("todoList").innerHTML = "";
 
+    // sort by completion status and id
+    const sorted = todoItems.sort(([aId, {checked: aChecked}], [bId, {checked: bChecked}]) => {
+      if (aChecked !== bChecked) return aChecked - bChecked;
+      return aId - bId;
+    })
+
     // Add each todo item to the view
-    todoItems.forEach((value, key) => {
-      this.appendTodoItem(value.title, key, value.checked);
+    sorted.forEach(([todoId, {title, checked}]) => {
+      this.appendTodoItem(title, todoId, checked);
     });
   }
 
@@ -116,7 +122,7 @@ class TodoView extends Croquet.View {
     newTodo.value = "";
 
     // Optimistic update
-    this.appendTodoItem(title, this.model.todoIds + 1, false);
+    this.redraw([ [Infinity, {title, checked: false} ]]);
 
     // Publish event to the model, and by extension, all views, including ours
     this.publish("todo", "add", title);
