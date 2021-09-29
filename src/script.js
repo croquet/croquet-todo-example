@@ -129,33 +129,33 @@ class TodoView extends Croquet.View {
   }
 
   editTodo(event) {
-    const todoItem = event.target.parentNode;
-    const todoId = +todoItem.id;
+    const todoElement = event.target.parentNode;
+    const todoId = +todoElement.id;
     const title = event.target.value;
 
     // Optimistic update
-    todoItem.querySelector(".todoText").innerHTML = title;
+    todoElement.querySelector(".todoText").innerHTML = title;
     this.disableEditTodo(event);
 
     this.publish("todo", "edit", { todoId, title });
   }
 
   deleteTodo(event) {
-    const todoItem = event.target.parentNode;
-    const todoId = +todoItem.id;
+    const todoElement = event.target.parentNode;
+    const todoId = +todoElement.id;
 
     // Optimistic update
-    todoItem.parentNode.removeChild(todoItem);
+    todoElement.parentNode.removeChild(todoElement);
 
     this.publish("todo", "delete", { todoId });
   }
 
   enableEditTodo(event) {
-    const todoItem = event.target.parentNode;
-    const todoEdit = todoItem.querySelector(".todoEdit");
+    const todoElement = event.target.parentNode;
+    const todoEdit = todoElement.querySelector(".todoEdit");
 
     // Hide the text
-    const todoText = todoItem.querySelector(".todoText")
+    const todoText = todoElement.querySelector(".todoText")
     todoText.hidden = true;
 
     // Show the input field
@@ -166,11 +166,11 @@ class TodoView extends Croquet.View {
   }
 
   disableEditTodo(event) {
-    const todoItem = event.target.parentNode;
-    const todoEdit = todoItem.querySelector(".todoEdit");
+    const todoElement = event.target.parentNode;
+    const todoEdit = todoElement.querySelector(".todoEdit");
     todoEdit.hidden = true;
 
-    const todoText = todoItem.querySelector(".todoText")
+    const todoText = todoElement.querySelector(".todoText")
     todoText.hidden = false;
   }
 
