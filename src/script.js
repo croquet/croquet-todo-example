@@ -176,14 +176,14 @@ class TodoView extends Croquet.View {
 
   // Insert the todo item into the DOM
   appendTodoItem(title, todoId, checked) {
-    const newTodoItem = document.createElement("li");
-    newTodoItem.id = todoId;
+    const todoElement = document.createElement("li");
+    todoElement.id = todoId;
 
     // Create the checkbox
     const todoCheckButton = document.createElement("input");
     todoCheckButton.type = "checkbox";
     todoCheckButton.className = "todoCheck";
-    newTodoItem.appendChild(todoCheckButton);
+    todoElement.appendChild(todoCheckButton);
 
     // Publish an event when the checkbox is clicked
     todoCheckButton.onclick = event => this.todoCheckButtonClicked(event);
@@ -192,12 +192,12 @@ class TodoView extends Croquet.View {
     const editTodoButton = document.createElement("span");
     editTodoButton.className = "editTodo";
     editTodoButton.onclick = event => this.enableEditTodo(event);
-    newTodoItem.appendChild(editTodoButton);
+    todoElement.appendChild(editTodoButton);
 
     // Create the delete button
     const deleteTodoButton = document.createElement("span");
     deleteTodoButton.className = "deleteTodo";
-    newTodoItem.appendChild(deleteTodoButton);
+    todoElement.appendChild(deleteTodoButton);
 
     // Publish an event when delete is clicked
     deleteTodoButton.onclick = event => this.deleteTodo(event);
@@ -208,23 +208,23 @@ class TodoView extends Croquet.View {
     editTodoValue.setAttribute("contenteditable", "false");
     editTodoValue.hidden = true;
     editTodoValue.value = title;
-    newTodoItem.appendChild(editTodoValue);
+    todoElement.appendChild(editTodoValue);
 
     // Create the title
     const todoTitle = document.createElement("span");
     todoTitle.className = "todoText"
     todoTitle.innerHTML = title;
     todoTitle.ondblclick = event => this.enableEditTodo(event);
-    newTodoItem.appendChild(todoTitle);
+    todoElement.appendChild(todoTitle);
 
     // Check the checkbox if the todo is checked
     if (checked) {
       todoCheckButton.checked = true;
-      newTodoItem.className = "checked";
+      todoElement.className = "checked";
     }
 
     // Add to the DOM
-    document.getElementById("todoList").appendChild(newTodoItem);
+    document.getElementById("todoList").appendChild(todoElement);
   }
 }
 
