@@ -98,18 +98,18 @@ class TodoView extends Croquet.View {
   dispatchEnter(event) {
     const newTodo = document.getElementById("newTodo");
 
-    if (newTodo.focus && newTodo.value != "" && event.code === "Enter") {
+    if (newTodo.focus && newTodo.value !== "" && event.code === "Enter") {
       this.addTodo(event);
     }
 
-    if (event.target.className == "todoEdit" && event.code === "Enter") {
+    if (event.target.className === "todoEdit" && event.code === "Enter") {
       this.editTodo(event);
     }
   }
 
   addTodo() {
     const title = document.getElementById("newTodo").value;
-    if (title == "") { return; }
+    if (title === "") { return; }
 
     // Clear the input field
     newTodo.value = "";
