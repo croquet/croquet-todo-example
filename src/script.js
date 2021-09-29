@@ -2,7 +2,7 @@
 // VanillaJS
 
 // using prefixed names makes the code identical between
-// importing Croquet as modulke or via <script> tag
+// importing Croquet as module or via <script> tag
 // and matches our other docs
 import * as Croquet from "@croquet/croquet";
 
