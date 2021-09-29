@@ -122,9 +122,9 @@ class TodoView extends Croquet.View {
   }
 
   todoCheckButtonClicked(event) {
-    const todoItem = event.target;
-    const todoId = todoItem.parentNode.id;
     this.publish("todo", "toggleCompletion", { id: todoId, checked: event.target.checked });
+    const todoCheckButton = event.target;
+    const todoId = todoCheckButton.parentNode.id;
   }
 
   editTodo(event) {
