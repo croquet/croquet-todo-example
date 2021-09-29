@@ -22,7 +22,7 @@ class TodoList extends Croquet.Model {
   addTodo(title) {
     // Add the new todo to the map
     const todoId = ++this.todoIds;
-    this.todoItems.set(todoId, { title, checked: false });
+    this.todoItems.set(todoId, { todoId, title, checked: false });
 
     // Publish new todo items to the rest of the views
     this.publish("todo", "added");
@@ -82,8 +82,10 @@ class TodoView extends Croquet.View {
     document.onkeydown = event => this.dispatchEnter(event);
   }
 
-  redraw(extraItems = []) {
-    this.drawTodos([...this.model.todoItems, ...extraItems]);
+  redraw(extraItem = null) {
+    const todos = [...this.model.todoItems.values()];
+    if (extraItem) todos.push(extraItem);
+    this.drawTodos(todos);
   }
 
   drawTodos(todoItems) {
@@ -91,15 +93,15 @@ class TodoView extends Croquet.View {
     document.getElementById("todoList").innerHTML = "";
 
     // sort by completion status and id
-    const sorted = todoItems.sort(([aId, {checked: aChecked}], [bId, {checked: bChecked}]) => {
-      if (aChecked !== bChecked) return aChecked - bChecked;
-      return aId - bId;
+    const sorted = todoItems.sort((a, b) => {
+      if (a.checked !== b.checked) return a.checked - b.checked;
+      return a.todoId - b.todoId;
     })
 
     // Add each todo item to the view
-    sorted.forEach(([todoId, {title, checked}]) => {
+    for (const {todoId, title, checked} of sorted) {
       this.appendTodoItem(title, todoId, checked);
-    });
+    }
   }
 
   dispatchEnter(event) {
@@ -121,8 +123,8 @@ class TodoView extends Croquet.View {
     // Clear the input field
     newTodo.value = "";
 
-    // Optimistic update
-    this.redraw([ [Infinity, {title, checked: false} ]]);
+    // Optimistic local update
+    this.redraw({ todoId: Infinity, title, checked: false });
 
     // Publish event to the model, and by extension, all views, including ours
     this.publish("todo", "add", title);
