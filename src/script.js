@@ -151,28 +151,18 @@ class TodoView extends Croquet.View {
     this.publish("todo", "delete", { todoId });
   }
 
-  enableEditTodo(event) {
+  toggleEditTodo(event, editing) {
     const todoElement = event.target.parentNode;
     const todoEdit = todoElement.querySelector(".todoEdit");
-
-    // Hide the text
     const todoText = todoElement.querySelector(".todoText")
-    todoText.hidden = true;
 
-    // Show the input field
-    todoEdit.hidden = false;
-    todoEdit.focus();
-    todoEdit.onblur = event => this.disableEditTodo(event);
+    todoText.hidden = editing;
+    todoEdit.hidden = !editing;
+    if (editing) todoEdit.focus();
   }
 
-  disableEditTodo(event) {
-    const todoElement = event.target.parentNode;
-    const todoEdit = todoElement.querySelector(".todoEdit");
-    todoEdit.hidden = true;
-
-    const todoText = todoElement.querySelector(".todoText")
-    todoText.hidden = false;
-  }
+  enableEditTodo(event) { this.toggleEditTodo(event, true); }
+  disableEditTodo(event) { this.toggleEditTodo(event, false); }
 
   // Insert the todo item into the DOM
   appendTodoItem(title, todoId, checked) {
@@ -196,6 +186,7 @@ class TodoView extends Croquet.View {
     todoElement.querySelector(".editTodo").onclick = event => this.enableEditTodo(event);
     todoElement.querySelector(".deleteTodo").onclick = event => this.deleteTodo(event);
     todoElement.querySelector(".todoText").ondblclick = event => this.enableEditTodo(event);
+    todoElement.querySelector(".todoEdit").onblur = event => this.disableEditTodo(event);
 
     // Add to the DOM
     document.getElementById("todoList").appendChild(todoElement);
