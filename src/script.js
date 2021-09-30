@@ -91,8 +91,8 @@ class TodoView extends Croquet.View {
     document.getElementById("todoList").innerHTML = "";
 
     // Add each todo item to the view
-    for (const { todoId, title, checked } of todoArray) {
-      this.appendTodoItem(title, todoId, checked);
+    for (const item of todoArray) {
+      this.appendTodoItem(item);
     }
   }
 
@@ -166,7 +166,7 @@ class TodoView extends Croquet.View {
   disableEditTodo(event) { this.toggleEditTodo(event, false); }
 
   // Insert the todo item into the DOM
-  appendTodoItem(title, todoId, checked) {
+  appendTodoItem({ title, todoId, checked }) {
     // create element itself
     const todoElement = document.createElement("li");
     todoElement.id = todoId;
