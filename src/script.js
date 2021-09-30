@@ -5,48 +5,40 @@ import { Model, View, Session } from "@croquet/croquet";
 class TodoList extends Model {
   init() {
     this.todoItems = new Map();
+    this.currentTodoId = 0;
 
-    // Subscribe to receive new todo items
     this.subscribe("todo", "add", this.addTodo);
     this.subscribe("todo", "toggleCompletion", this.toggleCompletionTodo);
     this.subscribe("todo", "delete", this.deleteTodo);
-    this.subscribe("todo", "edit", this.editTodo);
+    this.subscribe("todo", "update", this.updateTodo);
   }
 
+  /**
+   * 
+   * @param todo object containing a title
+   */
   addTodo(todo) {
-    // Add the new todo to the map
-    const todoId = this.now();
+    const todoId = this.currentTodoId++;
     this.todoItems.set(`${todoId}`, { title: todo.title, checked: false });
 
-    // Publish new todo items to the rest of the views
     this.publish("todo", "added");
   }
 
   toggleCompletionTodo(todo) {
-    // Update the item to checked in the map
-    // TODO: Surely there is a cleaner way to do this! Spread operator?
-    const todoAttrs = this.todoItems.get(todo.id);
-    todoAttrs.checked = todo.checked;
-    this.todoItems.set(`${todo.id}`, todoAttrs);
+    this.todoItems.get(todo.id).checked = todo.checked;
 
-    // Publish checked todo item to the rest of the views
     this.publish("todo", "toggledCompletion");
   }
 
-  editTodo(todo) {
-    const todoAttrs = this.todoItems.get(todo.id);
-    todoAttrs.title = todo.title;
-    this.todoItems.set(`${todo.id}`, todoAttrs);
+  updateTodo(todo) {
+    this.todoItems.get(todo.id).title = todo.title;
 
-    // Publish edited todo item to the rest of the views
-    this.publish("todo", "edited");
+    this.publish("todo", "updated");
   }
 
   deleteTodo(todo) {
-    // Remove the item from the map
     this.todoItems.delete(todo.id);
 
-    // Publish deleted todo item to the rest of the views
     this.publish("todo", "deleted");
   }
 }
@@ -69,7 +61,7 @@ class TodoView extends View {
     this.subscribe("todo", "added", this.redraw);
     this.subscribe("todo", "toggledCompletion", this.redraw);
     this.subscribe("todo", "deleted", this.redraw);
-    this.subscribe("todo", "edited", this.redraw);
+    this.subscribe("todo", "updated", this.redraw);
 
     // When the enter key is pressed, add the todo
     document.onkeydown = this.logKey.bind(this);
@@ -92,12 +84,14 @@ class TodoView extends View {
   logKey(event) {
     const newTodoValue = document.getElementById("newTodoValue");
 
+    // If the enter key is pressed while adding a new todo, add the todo
     if (newTodoValue.focus && newTodoValue.value != "" && event.code === "Enter") {
       this.addTodo(event);
     }
 
+    // If the enter key is pressed while editing a todo, save the todo
     if (event.target.className == "todoEdit" && event.code === "Enter") {
-      this.editTodo(event);
+      this.updateTodo(event);
     }
   }
 
@@ -110,38 +104,35 @@ class TodoView extends View {
     newTodo.value = "";
 
     // Optimistic update
-    this.appendTodoItem(newTodoValue, this.now(), false);
+    this.appendTodoItem(newTodoValue, this.currentTodoId, false);
 
     // Publish events to the model, and by extension, other views
     this.publish("todo", "add", { title: newTodoValue });
   }
 
   toggleCompletionTodo(event) {
-    const todoItem = event.target;
-    const todoId = todoItem.parentNode.id;
+    const todoId = event.target.parentNode.id;
     this.publish("todo", "toggleCompletion", { id: todoId, checked: event.target.checked });
   }
 
-  editTodo(event) {
+  updateTodo(event) {
     const todoItem = event.target.parentNode;
-    const todoId = todoItem.id;
     const updatedTodoValue = event.target.value;
 
     // Optimistic update
     todoItem.querySelector(".todoText").innerHTML = updatedTodoValue;
     this.disableEditTodo(event);
 
-    this.publish("todo", "edit", { id: todoId, title: updatedTodoValue });
+    this.publish("todo", "update", { id: todoItem.id, title: updatedTodoValue });
   }
 
   deleteTodo(event) {
     const todoItem = event.target.parentNode;
-    const todoId = todoItem.id;
 
     // Optimistic update
     todoItem.parentNode.removeChild(todoItem);
 
-    this.publish("todo", "delete", { id: todoId });
+    this.publish("todo", "delete", { id: todoItem.id });
   }
 
   enableEditTodo(event) {
@@ -179,6 +170,12 @@ class TodoView extends View {
     todoCheckButton.className = "todoCheck";
     newTodoItem.appendChild(todoCheckButton);
 
+    // Check the checkbox if the todo is checked
+    if (checked) {
+      todoCheckButton.checked = true;
+      newTodoItem.className = "checked";
+    }
+
     // Publish an event when the checkbox is clicked
     todoCheckButton.onclick = event => this.toggleCompletionTodo(event);
 
@@ -210,12 +207,6 @@ class TodoView extends View {
     todoTitle.innerHTML = title;
     todoTitle.ondblclick = event => this.enableEditTodo(event);
     newTodoItem.appendChild(todoTitle);
-
-    // Check the checkbox if the todo is checked
-    if (checked) {
-      todoCheckButton.checked = true;
-      newTodoItem.className = "checked";
-    }
 
     // Add to the DOM
     document.getElementById("todoList").appendChild(newTodoItem);
