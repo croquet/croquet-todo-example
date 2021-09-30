@@ -133,6 +133,7 @@ class TodoView extends Croquet.View {
     const todoElement = event.target.parentNode;
     const todoId = +todoElement.id;
     const title = event.target.value;
+    if (!title) this.deleteTodo(event);
 
     // Optimistic update
     todoElement.querySelector(".todoText").innerHTML = title;
