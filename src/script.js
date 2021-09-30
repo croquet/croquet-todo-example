@@ -61,10 +61,9 @@ class TodoList extends Croquet.Model {
 TodoList.register("TodoList");
 
 class TodoView extends Croquet.View {
-  model = this.wellKnownModel("modelRoot");
-
   constructor(model) {
     super(model);
+    this.model = model;
 
     this.redraw();
 
