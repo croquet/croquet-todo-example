@@ -85,13 +85,13 @@ class TodoView extends Croquet.View {
     if (locallyAddedItem) todoArray.push(locallyAddedItem);
 
     // sort by completion status and id
-    const sorted = todoArray.sort((a, b) => a.checked - b.checked || a.todoId - b.todoId);
+    todoArray.sort((a, b) => a.checked - b.checked || a.todoId - b.todoId);
 
     // Clear existing todos
     document.getElementById("todoList").innerHTML = "";
 
     // Add each todo item to the view
-    for (const {todoId, title, checked} of sorted) {
+    for (const {todoId, title, checked} of todoArray) {
       this.appendTodoItem(title, todoId, checked);
     }
   }
