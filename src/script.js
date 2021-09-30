@@ -19,7 +19,7 @@ class TodoList extends Croquet.Model {
     this.subscribe("todo", "edit", this.editTodo);
   }
 
-  addTodo({title}) {
+  addTodo({ title }) {
     // Add the new todo to the map
     const todoId = ++this.todoIds;
     const todoItem = { todoId, title, checked: false };
@@ -29,7 +29,7 @@ class TodoList extends Croquet.Model {
     this.publish("todo", "changed");
   }
 
-  toggleCompletionTodo({todoId, checked}) {
+  toggleCompletionTodo({ todoId, checked }) {
     // Update checked status of item in the map
     const todoItem = this.todoItems.get(todoId);
     if (!todoItem) return; // might have been deleted
@@ -39,7 +39,7 @@ class TodoList extends Croquet.Model {
     this.publish("todo", "changed");
   }
 
-  editTodo({todoId, title}) {
+  editTodo({ todoId, title }) {
     const todoItem = this.todoItems.get(todoId);
     if (!todoItem) return; // might have been deleted
     todoItem.title = title;
@@ -48,7 +48,7 @@ class TodoList extends Croquet.Model {
     this.publish("todo", "changed");
   }
 
-  deleteTodo({todoId}) {
+  deleteTodo({ todoId }) {
     // Remove the item from the map
     this.todoItems.delete(todoId);
     // okay if already deleted
@@ -91,7 +91,7 @@ class TodoView extends Croquet.View {
     document.getElementById("todoList").innerHTML = "";
 
     // Add each todo item to the view
-    for (const {todoId, title, checked} of todoArray) {
+    for (const { todoId, title, checked } of todoArray) {
       this.appendTodoItem(title, todoId, checked);
     }
   }
