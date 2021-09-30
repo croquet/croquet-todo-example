@@ -19,7 +19,7 @@ class TodoList extends Croquet.Model {
     this.subscribe("todo", "edit", this.editTodo);
   }
 
-  addTodo(title) {
+  addTodo({title}) {
     // Add the new todo to the map
     const todoId = ++this.todoIds;
     const todoItem = { todoId, title, checked: false };
@@ -119,7 +119,7 @@ class TodoView extends Croquet.View {
     this.redraw({ todoId: Infinity, title, checked: false });
 
     // Publish event to the model, and by extension, all views, including ours
-    this.publish("todo", "add", title);
+    this.publish("todo", "add", { title });
   }
 
   todoCheckButtonClicked(event) {
