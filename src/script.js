@@ -32,7 +32,7 @@ class TodoList extends Croquet.Model {
   toggleCompletionTodo({todoId, checked}) {
     // Update checked status of item in the map
     const todoItem = this.todoItems.get(todoId);
-    if (!todoItem) { return; } // might have been deleted
+    if (!todoItem) return; // might have been deleted
     todoItem.checked = checked;
 
     // Refresh all views
@@ -41,7 +41,7 @@ class TodoList extends Croquet.Model {
 
   editTodo({todoId, title}) {
     const todoItem = this.todoItems.get(todoId);
-    if (!todoItem) { return; } // might have been deleted
+    if (!todoItem) return; // might have been deleted
     todoItem.title = title;
 
     // Refresh all views
@@ -113,7 +113,7 @@ class TodoView extends Croquet.View {
 
   addTodo() {
     const title = document.getElementById("newTodo").value;
-    if (title === "") { return; }
+    if (!title) return;
 
     // Clear the input field
     newTodo.value = "";
