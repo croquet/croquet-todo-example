@@ -1,9 +1,15 @@
 // Croquet Todo Example
 // VanillaJS
-import { Model, View, Session } from "@croquet/croquet";
 
-class TodoList extends Model {
+// using prefixed names makes the code identical between
+// importing Croquet as module or via <script> tag
+// and matches our other docs
+import * as Croquet from "@croquet/croquet";
+
+class TodoList extends Croquet.Model {
   init() {
+    // auto-incrementing ids
+    this.todoIds = 0;
     this.todoItems = new Map();
 
     // Subscribe to receive new todo items
@@ -13,51 +19,51 @@ class TodoList extends Model {
     this.subscribe("todo", "edit", this.editTodo);
   }
 
-  addTodo(todo) {
+  addTodo({ title }) {
     // Add the new todo to the map
-    const todoId = this.now();
-    this.todoItems.set(`${todoId}`, { title: todo.title, checked: false });
+    const todoId = ++this.todoIds;
+    const todoItem = { todoId, title, checked: false };
+    this.todoItems.set(todoId, todoItem);
 
-    // Publish new todo items to the rest of the views
-    this.publish("todo", "added");
+    // Refresh all views
+    this.publish("todo", "changed");
   }
 
-  toggleCompletionTodo(todo) {
-    // Update the item to checked in the map
-    // TODO: Surely there is a cleaner way to do this! Spread operator?
-    const todoAttrs = this.todoItems.get(todo.id);
-    todoAttrs.checked = todo.checked;
-    this.todoItems.set(`${todo.id}`, todoAttrs);
+  toggleCompletionTodo({ todoId, checked }) {
+    // Update checked status of item in the map
+    const todoItem = this.todoItems.get(todoId);
+    if (!todoItem) return; // might have been deleted
+    todoItem.checked = checked;
 
-    // Publish checked todo item to the rest of the views
-    this.publish("todo", "toggledCompletion");
+    // Refresh all views
+    this.publish("todo", "changed");
   }
 
-  editTodo(todo) {
-    const todoAttrs = this.todoItems.get(todo.id);
-    todoAttrs.title = todo.title;
-    this.todoItems.set(`${todo.id}`, todoAttrs);
+  editTodo({ todoId, title }) {
+    const todoItem = this.todoItems.get(todoId);
+    if (!todoItem) return; // might have been deleted
+    todoItem.title = title;
 
-    // Publish edited todo item to the rest of the views
-    this.publish("todo", "edited");
+    // Refresh all views
+    this.publish("todo", "changed");
   }
 
-  deleteTodo(todo) {
+  deleteTodo({ todoId }) {
     // Remove the item from the map
-    this.todoItems.delete(todo.id);
+    this.todoItems.delete(todoId);
+    // okay if already deleted
 
-    // Publish deleted todo item to the rest of the views
-    this.publish("todo", "deleted");
+    // Refresh all views
+    this.publish("todo", "changed");
   }
 }
 
 TodoList.register("TodoList");
 
-class TodoView extends View {
-  model = this.wellKnownModel("modelRoot");
-
+class TodoView extends Croquet.View {
   constructor(model) {
     super(model);
+    this.model = model;
 
     this.redraw();
 
@@ -65,169 +71,136 @@ class TodoView extends View {
     const addTodoButton = document.getElementById("addTodo");
     addTodoButton.onclick = event => this.addTodo(event);
 
-    // Subscribe to receive all new todos from the server
-    this.subscribe("todo", "added", this.redraw);
-    this.subscribe("todo", "toggledCompletion", this.redraw);
-    this.subscribe("todo", "deleted", this.redraw);
-    this.subscribe("todo", "edited", this.redraw);
+    // Redraw list if todos changed
+    this.subscribe("todo", "changed", this.redraw);
 
-    // When the enter key is pressed, add the todo
-    document.onkeydown = this.logKey.bind(this);
+    // When the enter key is pressed, add or edit the todo
+    document.onkeydown = event => this.dispatchEnter(event);
   }
 
-  redraw() {
-    this.drawTodos(this.model.todoItems);
-  }
+  redraw(locallyAddedItem = null) {
+    const todoArray = [...this.model.todoItems.values()];
 
-  drawTodos(todoItems) {
+    // for optimistic local update
+    if (locallyAddedItem) todoArray.push(locallyAddedItem);
+
+    // sort by completion status and id
+    todoArray.sort((a, b) => a.checked - b.checked || a.todoId - b.todoId);
+
     // Clear existing todos
     document.getElementById("todoList").innerHTML = "";
 
     // Add each todo item to the view
-    todoItems.forEach((value, key) => {
-      this.appendTodoItem(value.title, key, value.checked);
-    });
+    for (const item of todoArray) {
+      this.appendTodoItem(item);
+    }
   }
 
-  logKey(event) {
-    const newTodoValue = document.getElementById("newTodoValue");
+  dispatchEnter(event) {
+    const newTodo = document.getElementById("newTodo");
 
-    if (newTodoValue.focus && newTodoValue.value != "" && event.code === "Enter") {
+    if (newTodo.focus && newTodo.value !== "" && event.code === "Enter") {
       this.addTodo(event);
     }
 
-    if (event.target.className == "todoEdit" && event.code === "Enter") {
+    if (event.target.className === "todoEdit" && event.code === "Enter") {
       this.editTodo(event);
     }
   }
 
-  addTodo(event) {
-    const newTodo = document.getElementById("newTodoValue");
-    const newTodoValue = newTodo.value;
-    if (newTodoValue == "") { return; }
+  addTodo() {
+    const title = document.getElementById("newTodo").value;
+    if (!title) return;
 
     // Clear the input field
     newTodo.value = "";
 
-    // Optimistic update
-    this.appendTodoItem(newTodoValue, this.now(), false);
+    // Optimistic local update
+    this.redraw({ todoId: Infinity, title, checked: false });
 
-    // Publish events to the model, and by extension, other views
-    this.publish("todo", "add", { title: newTodoValue });
+    // Publish event to the model, and by extension, all views, including ours
+    this.publish("todo", "add", { title });
   }
 
-  toggleCompletionTodo(event) {
-    const todoItem = event.target;
-    const todoId = todoItem.parentNode.id;
-    this.publish("todo", "toggleCompletion", { id: todoId, checked: event.target.checked });
+  todoCheckButtonClicked(event) {
+    const todoCheckButton = event.target;
+    const todoId = +todoCheckButton.parentNode.id;
+    const checked = todoCheckButton.checked;
+    this.publish("todo", "toggleCompletion", { todoId, checked });
   }
 
   editTodo(event) {
-    const todoItem = event.target.parentNode;
-    const todoId = todoItem.id;
-    const updatedTodoValue = event.target.value;
+    const todoElement = event.target.parentNode;
+    const todoId = +todoElement.id;
+    const title = event.target.value;
+    if (!title) this.deleteTodo(event);
 
     // Optimistic update
-    todoItem.querySelector(".todoText").innerHTML = updatedTodoValue;
+    todoElement.querySelector(".todoText").innerHTML = title;
     this.disableEditTodo(event);
 
-    this.publish("todo", "edit", { id: todoId, title: updatedTodoValue });
+    this.publish("todo", "edit", { todoId, title });
   }
 
   deleteTodo(event) {
-    const todoItem = event.target.parentNode;
-    const todoId = todoItem.id;
+    const todoElement = event.target.parentNode;
+    const todoId = +todoElement.id;
 
     // Optimistic update
-    todoItem.parentNode.removeChild(todoItem);
+    todoElement.parentNode.removeChild(todoElement);
 
-    this.publish("todo", "delete", { id: todoId });
+    this.publish("todo", "delete", { todoId });
   }
 
-  enableEditTodo(event) {
-    const todoItem = event.target.parentNode;
-    const todoEdit = todoItem.querySelector(".todoEdit");
+  toggleEditTodo(event, editing) {
+    const todoElement = event.target.parentNode;
+    const todoEdit = todoElement.querySelector(".todoEdit");
+    const todoText = todoElement.querySelector(".todoText")
 
-    // Hide the text
-    const todoText = todoItem.querySelector(".todoText")
-    todoText.hidden = true;
-
-    // Show the input field
-    todoEdit.hidden = false;
-    todoEdit.setAttribute("contenteditable", "true");
-    todoEdit.focus();
-    todoEdit.addEventListener("blur", this.disableEditTodo);
+    todoText.hidden = editing;
+    todoEdit.hidden = !editing;
+    if (editing) todoEdit.focus();
   }
 
-  disableEditTodo(event) {
-    const todoItem = event.target.parentNode;
-    const todoEdit = todoItem.querySelector(".todoEdit");
-    todoEdit.hidden = true;
-
-    const todoText = todoItem.querySelector(".todoText")
-    todoText.hidden = false;
-  }
+  enableEditTodo(event) { this.toggleEditTodo(event, true); }
+  disableEditTodo(event) { this.toggleEditTodo(event, false); }
 
   // Insert the todo item into the DOM
-  appendTodoItem(title, todoId, checked) {
-    const newTodoItem = document.createElement("li");
-    newTodoItem.id = todoId;
+  appendTodoItem({ title, todoId, checked }) {
+    // create element itself
+    const todoElement = document.createElement("li");
+    todoElement.id = todoId;
+    if (checked) todoElement.className = "checked";
 
-    // Create the checkbox
-    const todoCheckButton = document.createElement("input");
-    todoCheckButton.type = "checkbox";
-    todoCheckButton.className = "todoCheck";
-    newTodoItem.appendChild(todoCheckButton);
+    // create inner elements
+    todoElement.innerHTML = `
+      <input type="checkbox" class="todoCheck" ${checked ? 'checked' : ''}>
+      <span class="editTodo"></span>
+      <span class="deleteTodo"></span>
+      <span class="todoText">${title}</span>
+      <input class="todoEdit" hidden="true">
+    `;
+    todoElement.querySelector(".todoEdit").value = title;
 
-    // Publish an event when the checkbox is clicked
-    todoCheckButton.onclick = event => this.toggleCompletionTodo(event);
-
-    // Create the edit button
-    const editTodoButton = document.createElement("span");
-    editTodoButton.className = "editTodo";
-    editTodoButton.onclick = event => this.enableEditTodo(event);
-    newTodoItem.appendChild(editTodoButton);
-
-    // Create the delete button
-    const deleteTodoButton = document.createElement("span");
-    deleteTodoButton.className = "deleteTodo";
-    newTodoItem.appendChild(deleteTodoButton);
-
-    // Publish an event when delete is clicked
-    deleteTodoButton.onclick = event => this.deleteTodo(event);
-
-    // Create the edit input field
-    const editTodoValue = document.createElement("input");
-    editTodoValue.className = "todoEdit";
-    editTodoValue.setAttribute("contenteditable", "false");
-    editTodoValue.hidden = true;
-    editTodoValue.value = title;
-    newTodoItem.appendChild(editTodoValue);
-
-    // Create the title
-    const todoTitle = document.createElement("span");
-    todoTitle.className = "todoText"
-    todoTitle.innerHTML = title;
-    todoTitle.ondblclick = event => this.enableEditTodo(event);
-    newTodoItem.appendChild(todoTitle);
-
-    // Check the checkbox if the todo is checked
-    if (checked) {
-      todoCheckButton.checked = true;
-      newTodoItem.className = "checked";
-    }
+    // register event handlers
+    todoElement.querySelector(".todoCheck").onclick = event => this.todoCheckButtonClicked(event);
+    todoElement.querySelector(".editTodo").onclick = event => this.enableEditTodo(event);
+    todoElement.querySelector(".deleteTodo").onclick = event => this.deleteTodo(event);
+    todoElement.querySelector(".todoText").ondblclick = event => this.enableEditTodo(event);
+    todoElement.querySelector(".todoEdit").onblur = event => this.disableEditTodo(event);
 
     // Add to the DOM
-    document.getElementById("todoList").appendChild(newTodoItem);
+    document.getElementById("todoList").appendChild(todoElement);
   }
 }
 
-Session.join({
+Croquet.App.makeWidgetDock();
+
+Croquet.Session.join({
   appId: "in.jessmart.croquet.todo.example",
   apiKey: "1_bdoj07sd3kzujn95jhplk2pz8xuio3pbmxx3k7q6",
-  name: "todo-session",
-  password: "secret",
-  debug: "sends",
+  name: Croquet.App.autoSession(),
+  password: Croquet.App.autoPassword(),
   model: TodoList,
   view: TodoView
 });
