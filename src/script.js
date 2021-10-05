@@ -1,9 +1,6 @@
 // Croquet Todo Example
 // VanillaJS
 
-// using prefixed names makes the code identical between
-// importing Croquet as module or via <script> tag
-// and matches our other docs
 import * as Croquet from "@croquet/croquet";
 
 class TodoList extends Croquet.Model {
@@ -72,9 +69,9 @@ class TodoView extends Croquet.View {
     addTodoButton.onclick = event => this.addTodo(event);
 
     this.subscribe("todo", "added", this.addedTodo);
-    this.subscribe("todo", "toggledCompletion", this.redraw);
-    this.subscribe("todo", "deleted", this.redraw);
-    this.subscribe("todo", "edited", this.redraw);
+    this.subscribe("todo", "toggledCompletion", this.toggledTodoCompletion);
+    this.subscribe("todo", "deleted", this.deletedTodo);
+    this.subscribe("todo", "edited", this.editedTodo);
 
     // When the enter key is pressed, add or edit the todo
     document.onkeydown = event => this.dispatchEnter(event);
@@ -86,7 +83,7 @@ class TodoView extends Croquet.View {
     // sort by id
     todoArray.sort((a, b) => a.todoId - b.todoId);
 
-    // Clear existing todos
+    // Clear any existing todos
     document.getElementById("todoList").innerHTML = "";
 
     // Add each todo item to the view
@@ -110,50 +107,28 @@ class TodoView extends Croquet.View {
   addTodo() {
     const title = document.getElementById("newTodo").value;
     if (!title) return;
-
-    // Clear the input field
     newTodo.value = "";
 
-    // Optimistic local update
-    this.appendTodoItem({ todoId: "optimistic-add", title, checked: false });
-
-    // Publish event to the model, and by extension, all views, including ours
     this.publish("todo", "add", { title });
   }
 
   addedTodo({ todoId, title }) {
-    // Remove the optimistically added todo
-    const todoElement = document.getElementById("optimistic-add");
-    todoElement.parentNode.removeChild(todoElement);
-
-    // NOTE: There is a possibility of inconsistent ordering across devices
-    // Consider the following scenario:
-    // User A adds a todo. Todos contains [1, 2, OptimisticTodoA]
-    // User B adds a todo. Todos contains [1, 2, OptimisticTodoB]
-    // User A receives B's message: Todos contain [1, 2, OptimisticTodoA, TodoB]
-    // User A receives A's message
-    // 
-    // At this point, there are two options:
-    // 1. Remove OptimisticTodoA from the list and insert at the end of the list, in 
-    //    which case Todos contain [1, 2, TodoB, TodoA].
-    //    This would ensure that all devices see the same list of todos, but would cause
-    //    the new todo to "jump" from third to fourth position. In reality, given the
-    //    small size of this example, it would likely hardly be noticeable.
-    // 2. Remove OptimisticTodoA from the list and insert in place, in which case
-    //    Todos contain [1, 2, TodoA, TodoB].
-    //    This would prevent any kind of "jumping" of todos, but would mean that
-    //    different devices see a different ordering of todos.
-    //
-    // Interestingly, there's no right answer here. The best solution will be up to 
-    // the discretion of the developer.
     this.appendTodoItem({ todoId, title, checked: false });
   }
 
-  todoCheckButtonClicked(event) {
+  toggleTodoCompletion(event) {
     const todoCheckButton = event.target;
     const todoId = +todoCheckButton.parentNode.id;
-    const checked = todoCheckButton.checked;
-    this.publish("todo", "toggleCompletion", { todoId, checked });
+    this.publish("todo", "toggleCompletion", { todoId, checked: todoCheckButton.checked });
+    event.preventDefault();
+  }
+
+  toggledTodoCompletion({ todoId, checked }) {
+    const todoElement = document.getElementById(todoId);
+    todoElement.className = checked ? "checked" : "";
+    const todoCheckButton = todoElement.querySelector("input");
+
+    todoCheckButton.checked = checked;
   }
 
   editTodo(event) {
@@ -162,21 +137,26 @@ class TodoView extends Croquet.View {
     const title = event.target.value;
     if (!title) this.deleteTodo(event);
 
-    // Optimistic update
-    todoElement.querySelector(".todoText").innerHTML = title;
-    this.disableEditTodo(event);
+    this.toggleEditTodo(event, false);
 
     this.publish("todo", "edit", { todoId, title });
+  }
+
+  editedTodo({ todoId, title }) {
+    const todoElement = document.getElementById(todoId);
+    todoElement.querySelector(".todoText").innerText = title;
   }
 
   deleteTodo(event) {
     const todoElement = event.target.parentNode;
     const todoId = +todoElement.id;
 
-    // Optimistic update
-    todoElement.parentNode.removeChild(todoElement);
-
     this.publish("todo", "delete", { todoId });
+  }
+
+  deletedTodo({ todoId }) {
+    const todoElement = document.getElementById(todoId);
+    todoElement.parentElement.removeChild(todoElement);
   }
 
   toggleEditTodo(event, editing) {
@@ -210,7 +190,7 @@ class TodoView extends Croquet.View {
     todoElement.querySelector(".todoEdit").value = title;
 
     // register event handlers
-    todoElement.querySelector(".todoCheck").onclick = event => this.todoCheckButtonClicked(event);
+    todoElement.querySelector(".todoCheck").onclick = event => this.toggleTodoCompletion(event);
     todoElement.querySelector(".editTodo").onclick = event => this.enableEditTodo(event);
     todoElement.querySelector(".deleteTodo").onclick = event => this.deleteTodo(event);
     todoElement.querySelector(".todoText").ondblclick = event => this.enableEditTodo(event);
