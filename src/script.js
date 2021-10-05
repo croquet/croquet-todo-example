@@ -26,7 +26,7 @@ class TodoList extends Croquet.Model {
     this.todoItems.set(todoId, todoItem);
 
     // Refresh all views
-    this.publish("todo", "changed");
+    this.publish("todo", "added", { todoId: todoId, title: title });
   }
 
   toggleCompletionTodo({ todoId, checked }) {
@@ -36,7 +36,7 @@ class TodoList extends Croquet.Model {
     todoItem.checked = checked;
 
     // Refresh all views
-    this.publish("todo", "changed");
+    this.publish("todo", "toggledCompletion", { todoId: todoId, checked: checked });
   }
 
   editTodo({ todoId, title }) {
@@ -45,7 +45,7 @@ class TodoList extends Croquet.Model {
     todoItem.title = title;
 
     // Refresh all views
-    this.publish("todo", "changed");
+    this.publish("todo", "edited", { todoId: todoId, title: title });
   }
 
   deleteTodo({ todoId }) {
@@ -54,7 +54,7 @@ class TodoList extends Croquet.Model {
     // okay if already deleted
 
     // Refresh all views
-    this.publish("todo", "changed");
+    this.publish("todo", "deleted", { todoId: todoId });
   }
 }
 
@@ -65,27 +65,26 @@ class TodoView extends Croquet.View {
     super(model);
     this.model = model;
 
-    this.redraw();
+    this.drawTodos();
 
     // Register click handlers for add todo button
     const addTodoButton = document.getElementById("addTodo");
     addTodoButton.onclick = event => this.addTodo(event);
 
-    // Redraw list if todos changed
-    this.subscribe("todo", "changed", this.redraw);
+    this.subscribe("todo", "added", this.addedTodo);
+    this.subscribe("todo", "toggledCompletion", this.redraw);
+    this.subscribe("todo", "deleted", this.redraw);
+    this.subscribe("todo", "edited", this.redraw);
 
     // When the enter key is pressed, add or edit the todo
     document.onkeydown = event => this.dispatchEnter(event);
   }
 
-  redraw(locallyAddedItem = null) {
+  drawTodos() {
     const todoArray = [...this.model.todoItems.values()];
 
-    // for optimistic local update
-    if (locallyAddedItem) todoArray.push(locallyAddedItem);
-
-    // sort by completion status and id
-    todoArray.sort((a, b) => a.checked - b.checked || a.todoId - b.todoId);
+    // sort by id
+    todoArray.sort((a, b) => a.todoId - b.todoId);
 
     // Clear existing todos
     document.getElementById("todoList").innerHTML = "";
@@ -116,10 +115,38 @@ class TodoView extends Croquet.View {
     newTodo.value = "";
 
     // Optimistic local update
-    this.redraw({ todoId: Infinity, title, checked: false });
+    this.appendTodoItem({ todoId: "optimistic-add", title, checked: false });
 
     // Publish event to the model, and by extension, all views, including ours
     this.publish("todo", "add", { title });
+  }
+
+  addedTodo({ todoId, title }) {
+    // Remove the optimistically added todo
+    const todoElement = document.getElementById("optimistic-add");
+    todoElement.parentNode.removeChild(todoElement);
+
+    // NOTE: There is a possibility of inconsistent ordering across devices
+    // Consider the following scenario:
+    // User A adds a todo. Todos contains [1, 2, OptimisticTodoA]
+    // User B adds a todo. Todos contains [1, 2, OptimisticTodoB]
+    // User A receives B's message: Todos contain [1, 2, OptimisticTodoA, TodoB]
+    // User A receives A's message
+    // 
+    // At this point, there are two options:
+    // 1. Remove OptimisticTodoA from the list and insert at the end of the list, in 
+    //    which case Todos contain [1, 2, TodoB, TodoA].
+    //    This would ensure that all devices see the same list of todos, but would cause
+    //    the new todo to "jump" from third to fourth position. In reality, given the
+    //    small size of this example, it would likely hardly be noticeable.
+    // 2. Remove OptimisticTodoA from the list and insert in place, in which case
+    //    Todos contain [1, 2, TodoA, TodoB].
+    //    This would prevent any kind of "jumping" of todos, but would mean that
+    //    different devices see a different ordering of todos.
+    //
+    // Interestingly, there's no right answer here. The best solution will be up to 
+    // the discretion of the developer.
+    this.appendTodoItem({ todoId, title, checked: false });
   }
 
   todoCheckButtonClicked(event) {
