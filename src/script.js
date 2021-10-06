@@ -8,10 +8,10 @@ class TodoList extends Croquet.Model {
     this.todoIds = 0; // auto-incrementing todo IDs
     this.todoItems = new Map();
 
-    this.subscribe("todo", "add", this.addTodo);
-    this.subscribe("todo", "toggleCompletion", this.toggleCompletionTodo);
-    this.subscribe("todo", "delete", this.deleteTodo);
-    this.subscribe("todo", "edit", this.editTodo);
+    this.subscribe("todo-list", "add-todo", this.addTodo);
+    this.subscribe("todo-list", "toggle-completion-todo", this.toggleCompletionTodo);
+    this.subscribe("todo-list", "delete-todo", this.deleteTodo);
+    this.subscribe("todo-list", "edit-todo", this.editTodo);
   }
 
   addTodo({ title }) {
@@ -19,7 +19,7 @@ class TodoList extends Croquet.Model {
     const todoItem = { todoId, title, checked: false };
     this.todoItems.set(todoId, todoItem);
 
-    this.publish("todo", "added", { todoId: todoId, title: title });
+    this.publish("todo-list", "added-todo", { todoId: todoId, title: title });
   }
 
   toggleCompletionTodo({ todoId, checked }) {
@@ -27,7 +27,7 @@ class TodoList extends Croquet.Model {
     if (!todoItem) return; // might have been deleted
     todoItem.checked = checked;
 
-    this.publish("todo", "toggledCompletion", { todoId: todoId, checked: checked });
+    this.publish("todo-list", "toggled-completion-todo", { todoId: todoId, checked: checked });
   }
 
   editTodo({ todoId, title }) {
@@ -35,13 +35,13 @@ class TodoList extends Croquet.Model {
     if (!todoItem) return; // might have been deleted
     todoItem.title = title;
 
-    this.publish("todo", "edited", { todoId: todoId, title: title });
+    this.publish("todo-list", "edited-todo", { todoId: todoId, title: title });
   }
 
   deleteTodo({ todoId }) {
     this.todoItems.delete(todoId); // okay if already deleted
 
-    this.publish("todo", "deleted", { todoId: todoId });
+    this.publish("todo-list", "deleted-todo", { todoId: todoId });
   }
 }
 
@@ -56,15 +56,15 @@ class TodoView extends Croquet.View {
 
     // Register click handlers for add todo button
     const addTodoButton = document.getElementById("addTodo");
-    addTodoButton.onclick = event => this.addTodo(event);
+    addTodoButton.onclick = event => this.onAddTodo(event);
 
-    this.subscribe("todo", "added", this.addedTodo);
-    this.subscribe("todo", "toggledCompletion", this.toggledTodoCompletion);
-    this.subscribe("todo", "deleted", this.deletedTodo);
-    this.subscribe("todo", "edited", this.editedTodo);
+    this.subscribe("todo-list", "added-todo", this.addedTodo);
+    this.subscribe("todo-list", "toggled-completion-todo", this.toggledCompletionTodo);
+    this.subscribe("todo-list", "deleted-todo", this.deletedTodo);
+    this.subscribe("todo-list", "edited-todo", this.editedTodo);
 
     // When the enter key is pressed, add or edit the todo
-    document.onkeydown = event => this.dispatchEnter(event);
+    document.onkeydown = event => this.onEnterPress(event);
   }
 
   drawTodos() {
@@ -82,38 +82,38 @@ class TodoView extends Croquet.View {
     }
   }
 
-  dispatchEnter(event) {
+  onEnterPress(event) {
     const newTodo = document.getElementById("newTodo");
 
     if (newTodo.focus && newTodo.value !== "" && event.code === "Enter") {
-      this.addTodo(event);
+      this.onAddTodo(event);
     }
 
     if (event.target.className === "todoEdit" && event.code === "Enter") {
-      this.editTodo(event);
+      this.onEditTodo(event);
     }
   }
 
-  addTodo() {
+  onAddTodo() {
     const title = document.getElementById("newTodo").value;
     if (!title) return;
     newTodo.value = "";
 
-    this.publish("todo", "add", { title });
+    this.publish("todo-list", "add-todo", { title });
   }
 
   addedTodo({ todoId, title }) {
     this.appendTodoElement({ todoId, title, checked: false });
   }
 
-  toggleTodoCompletion(event) {
+  onTodoToggleCompletion(event) {
     const todoCheckButton = event.target;
     const todoId = +todoCheckButton.parentNode.id;
-    this.publish("todo", "toggleCompletion", { todoId, checked: todoCheckButton.checked });
+    this.publish("todo-list", "toggle-completion-todo", { todoId, checked: todoCheckButton.checked });
     event.preventDefault();
   }
 
-  toggledTodoCompletion({ todoId, checked }) {
+  toggledCompletionTodo({ todoId, checked }) {
     const todoElement = document.getElementById(todoId);
     todoElement.className = checked ? "checked" : "";
     const todoCheckButton = todoElement.querySelector("input");
@@ -121,14 +121,14 @@ class TodoView extends Croquet.View {
     todoCheckButton.checked = checked;
   }
 
-  editTodo(event) {
+  onEditTodo(event) {
     const todoElement = event.target.parentNode;
     const title = event.target.value;
-    if (!title) this.deleteTodo(event);
+    if (!title) this.onDeleteTodo(event);
 
     this.toggleEditTodo(event, false);
 
-    this.publish("todo", "edit", { todoId: +todoElement.id, title });
+    this.publish("todo-list", "edit-todo", { todoId: +todoElement.id, title });
   }
 
   editedTodo({ todoId, title }) {
@@ -136,10 +136,10 @@ class TodoView extends Croquet.View {
     todoElement.querySelector(".todoText").innerText = title;
   }
 
-  deleteTodo(event) {
+  onDeleteTodo(event) {
     const todoElement = event.target.parentNode;
 
-    this.publish("todo", "delete", { todoId: +todoElement.id });
+    this.publish("todo-list", "delete-todo", { todoId: +todoElement.id });
   }
 
   deletedTodo({ todoId }) {
@@ -157,8 +157,8 @@ class TodoView extends Croquet.View {
     if (editing) todoEdit.focus();
   }
 
-  enableEditTodo(event) { this.toggleEditTodo(event, true); }
-  disableEditTodo(event) { this.toggleEditTodo(event, false); }
+  onEnableEditTodo(event) { this.toggleEditTodo(event, true); }
+  onDisableEditTodo(event) { this.toggleEditTodo(event, false); }
 
   appendTodoElement({ title, todoId, checked }) {
     const todoElement = document.createElement("li");
@@ -174,11 +174,11 @@ class TodoView extends Croquet.View {
     `;
     todoElement.querySelector(".todoEdit").value = title;
 
-    todoElement.querySelector(".todoCheck").onclick = event => this.toggleTodoCompletion(event);
-    todoElement.querySelector(".editTodo").onclick = event => this.enableEditTodo(event);
-    todoElement.querySelector(".deleteTodo").onclick = event => this.deleteTodo(event);
-    todoElement.querySelector(".todoText").ondblclick = event => this.enableEditTodo(event);
-    todoElement.querySelector(".todoEdit").onblur = event => this.disableEditTodo(event);
+    todoElement.querySelector(".todoCheck").onclick = event => this.onTodoToggleCompletion(event);
+    todoElement.querySelector(".editTodo").onclick = event => this.onEnableEditTodo(event);
+    todoElement.querySelector(".deleteTodo").onclick = event => this.onDeleteTodo(event);
+    todoElement.querySelector(".todoText").ondblclick = event => this.onEnableEditTodo(event);
+    todoElement.querySelector(".todoEdit").onblur = event => this.onDisableEditTodo(event);
 
     document.getElementById("todoList").appendChild(todoElement);
   }
