@@ -37,10 +37,10 @@ the user's action and the UI updating. However, whenever the UI is being optimis
 there is a possibility of inconsistent ordering and/or jumping across devices.
 
 Consider the following scenario:
-User A adds a todo. Todos contains [1, 2, OptimisticTodoA]
-User B adds a todo. Todos contains [1, 2, OptimisticTodoB]
-User A receives B's message: Todos contain [1, 2, OptimisticTodoA, TodoB]
-User A receives A's message
+- User A adds a todo. Todos contains [1, 2, OptimisticTodoA]
+- User B adds a todo. Todos contains [1, 2, OptimisticTodoB]
+- User A receives B's message: Todos contain [1, 2, OptimisticTodoA, TodoB]
+- User A receives A's message
 
 At this point, there are two options:
 
@@ -57,6 +57,3 @@ At this point, there are two options:
 Interestingly, there's no right answer here. The best solution will be up to
 the discretion of the developer.
 
-```
-
-```
