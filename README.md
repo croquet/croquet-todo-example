@@ -2,6 +2,8 @@
 
 Realtime collaborative todo app implemented using the Croquet platform.
 
+Demo deployed at [Netlify](https://croquet-todo.netlify.com)
+
 [![Netlify Status](https://api.netlify.com/api/v1/badges/bd75c5b5-67c2-48b8-b5af-ac38cc84ce1c/deploy-status)](https://app.netlify.com/sites/croquet-todo/deploys)
 
 ## Getting Started
